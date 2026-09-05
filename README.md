@@ -1,322 +1,148 @@
-## 공통과제 I : 웹 기반 프로젝트 (2인 1팀)
+# 꿀템
 
-**목적:** 공통 과제를 함께 수행하며 웹 개발의 전체 흐름을 빠르게 익히고 협업에 적응하기
+상품 추천이 여러 SNS와 쇼핑몰에 흩어지는 문제를 해결하기 위해 만든
+커뮤니티형 추천 서비스입니다. 사용자가 쇼핑 화면을 캡처해 올리면 AI가
+상품 정보를 추출하고, 다른 사용자의 추천·리뷰·반응을 모아 믿을 만한
+아이템을 탐색할 수 있습니다.
 
-**결과물:** 기획부터 배포까지 완료된 웹 서비스와 관련 문서 일체
+<p align="center">
+  <img width="47%" alt="꿀템 홈 화면" src="https://github.com/user-attachments/assets/0a5f1e5b-3c5d-4fac-b5b4-5c8c64f1bfec">
+  <img width="47%" alt="꿀템 아이템 화면" src="https://github.com/user-attachments/assets/d63b3525-7aaa-4827-a671-400a5744a4de">
+</p>
 
----
+## 핵심 사용자 흐름
 
-## 팀원
+1. 상품 URL과 쇼핑 화면 screenshot을 업로드합니다.
+2. vision pipeline이 상품명, 가격, 브랜드, 카테고리와 대표 이미지를
+   추출합니다.
+3. URL 정규화와 상품명·브랜드·모델명 비교로 중복 후보를 먼저 보여줍니다.
+4. 사용자가 기존 상품 또는 새 상품을 선택하고 추천 이유와 리뷰를
+   작성합니다.
+5. 추천 수와 리뷰 반응을 바탕으로 ranking과 상세 페이지가 갱신됩니다.
 
-| 이름 | GitHub | 역할 |
-|------|--------|------|
-|박채훈|chek737|-|
-|이서영|sksy930|-|
-|최재윤|Jaeyun-18|-|
+## 주요 기능
 
----
+- JWT 기반 회원가입·로그인·로그아웃
+- Gemini 또는 Codex vision provider를 이용한 screenshot 정보 추출
+- 상품 영역 crop 및 미디어 저장
+- URL, 상품명, 브랜드, model token을 조합한 중복 후보 탐색
+- 카테고리별 상품 ranking과 추천 toggle
+- 리뷰·댓글 작성 및 좋아요/싫어요 반응
+- 사용자 profile, 팔로우·팔로워, 추천 상품 모아보기
+- 일반 사용자의 상품 수정·삭제 요청과 Django admin 승인 workflow
 
-## 기획안
-
-- **주제:**
-
-아이템 추천 웹 서비스
-
-- **목적:**
-
-여러 commercial 서비스를 통합하여 나만 알기 아까운 꿀템들을 게시하고, 여러 사람들이 좋아한 아이템에 대한 정보를 쉽게 모아볼 수 있는 서비스를 개발하고자 한다. 
-
-- **서비스 범위:**
-  - 초기 MVP에서는 구매 가능한 실물 상품만 추천 대상으로 다룬다.
-  - 예시는 화장품, 전자기기, 의류, 생활용품처럼 구매 사이트에서 확인할 수 있고 상품명, 이미지, 가격, 리뷰, 별점 등의 정보를 수집하거나 추출할 수 있는 아이템이다.
-  - 디지털 콘텐츠, 장소, 음식점, 서비스 상품처럼 구매/상품 정보 구조가 다른 대상은 초기 범위에서 제외한다.
-
-- **핵심 기능:**
-  - 아이템 등록/탐색: 유저가 상품 URL과 구매 사이트 스크린샷을 입력하면 AI가 상품 정보를 인식해 등록
-  - 꿀템 랭킹: 아이템 자체의 추천 수와 비추천 수를 기반으로 인기 아이템 정렬
-  - 리뷰/평가: 아이템에 대한 추천 이유, 리뷰 본문, 좋아요/싫어요, 댓글 제공
-  - 수정/삭제 요청: 사용자가 아이템 정보 수정 또는 삭제를 요청하고 Admin이 승인/거절
-
-- **예상 사용자:**
-  - 웹 검색을 할 수 있고 특정 카테고리에서 어떤 아이템이 좋을지 알아보고 싶은 사람
-  - 여러 SNS를 돌아다니며 추천 콘텐츠를 찾는 데 피로를 느끼는 사람
-  - 특정 분야에 신뢰하는 인플루언서/유저의 추천을 따라가고 싶은 사람
-
-## 기능 명세서
-
-### 필수 기능
-
-- [ ] 회원가입 / 로그인
-  - 초기 MVP에서는 이메일 없이 username, 비밀번호, 닉네임으로 가입한다.
-  - 이메일 기반 비밀번호 찾기와 알림 기능은 초기 MVP에서 제외한다.
-- [ ] 아이템 등록 및 리뷰 작성
-  - 로그인한 일반 사용자는 누구나 아이템에 대한 리뷰를 작성할 수 있다.
-  - 세상에 있는 모든 아이템을 미리 등록해두지 않는다.
-  - 최초 유저가 어떤 상품에 대한 리뷰를 작성하면 해당 상품이 아이템으로 DB에 추가된다.
-  - 이미 DB에 존재하는 아이템에 대해서는 다른 유저가 추가 리뷰를 작성할 수 있다.
-  - 초기 MVP에서는 상품 URL과 구매 사이트 스크린샷을 함께 입력받는다.
-  - 스크린샷을 기반으로 AI가 상품명, 대표 이미지, 가격, 쇼핑몰 또는 브랜드명, 원본 URL, 별점, 리뷰 수를 채우게 한다.
-  - 사용자는 AI가 채운 상품 정보에 추천 이유와 리뷰 본문을 추가해 리뷰를 작성한다.
-- [ ] 중복 아이템 후보 확인
-  - URL은 상품 출처 기록과 중복 아이템 판별에 활용한다.
-  - 원본 URL을 정규화했을 때 같으면 동일 상품 후보로 본다.
-  - URL이 다르면 상품명 기준으로 기존 아이템 후보를 검색한다.
-  - 상품명 후보 검색은 자동 확정이 아니라 사용자에게 "혹시 이 상품인가요?"로 보여주기 위한 용도로만 사용한다.
-  - 사용자가 기존 아이템을 선택하면 해당 아이템에 리뷰를 추가하고, 아니라고 선택하면 새 아이템과 첫 리뷰를 생성한다.
-- [ ] 꿀템 랭킹
-  - 초기 MVP의 꿀템 랭킹은 복잡한 개인화 알고리즘 대신 아이템 자체의 추천 수 기반 정렬로 시작한다.
-  - 기본 점수는 `아이템 추천 수 - 아이템 비추천 수`로 계산한다.
-- [ ] 아이템 상세 및 리뷰 목록
-  - 아이템 상세 화면에는 상품 정보, 원본 URL 이동 버튼, 추천/비추천 수, 리뷰 목록을 보여준다.
-  - 아이템 상세 화면 안에서 리뷰 목록은 `리뷰 좋아요 수 - 리뷰 싫어요 수` 기반으로 정렬한다.
-  - 좋아요를 많이 받은 리뷰는 상단에 노출되고, 광고성 리뷰나 공감받지 못한 리뷰는 자연스럽게 아래로 내려간다.
-- [ ] 리뷰 댓글
-  - 다른 유저들은 각 리뷰에 댓글을 남길 수 있다.
-  - 댓글은 리뷰 글에 대한 의견, 사용 경험, 반박, 추가 정보를 담는다.
-  - 한 유저는 같은 리뷰에 댓글을 여러 개 작성할 수 있다.
-  - 작성자는 자신의 댓글을 수정하거나 삭제할 수 있다.
-- [ ] 리뷰 좋아요 / 싫어요
-  - 좋아요/싫어요의 대상은 개별 리뷰다.
-  - 리뷰 좋아요/싫어요는 해당 아이템 상세 화면의 리뷰 정렬에 반영한다.
-  - 한 사용자는 한 리뷰에 대해 좋아요 또는 싫어요 중 하나만 선택할 수 있다.
-  - 사용자는 자신의 반응을 좋아요에서 싫어요로, 싫어요에서 좋아요로 변경할 수 있다.
-  - 같은 반응을 다시 누르면 반응을 취소할 수 있다.
-- [ ] 아이템 추천 / 비추천
-  - 추천/비추천의 대상은 아이템 자체다.
-  - 아이템 추천/비추천은 이 아이템이 진짜 꿀템인지 정량적으로 나타내는 지표다.
-  - 아이템 추천/비추천은 꿀템 랭킹 점수에 반영한다.
-  - 한 사용자는 한 아이템에 대해 추천 또는 비추천 중 하나만 선택할 수 있다.
-  - 사용자는 자신의 반응을 추천에서 비추천으로, 비추천에서 추천으로 변경할 수 있다.
-  - 같은 반응을 다시 누르면 반응을 취소할 수 있다.
-- [ ] 아이템 수정/삭제 요청
-  - 사용자는 아이템의 상품 정보를 직접 수정하거나 삭제할 수 없다.
-  - 사용자는 수정 요청 또는 삭제 요청을 보낼 수 있다.
-  - 실제 수정/삭제 반영 여부는 Admin이 승인하거나 거절한다.
-- [ ] Admin 관리
-  - 초기 MVP에서는 별도 React 관리자 화면을 만들지 않고 Django admin을 사용한다.
-  - Admin은 Django admin에서 아이템, 리뷰, 댓글, 수정 요청, 삭제 요청을 확인한다.
-  - 수정/삭제 요청은 Django admin에서 승인 또는 거절한다.
-
-### 선택 기능
-
-- [ ] 팔로우
-  - 특정 카테고리에서 영향력 있는 유저를 팔로우해 추천을 지속적으로 받아보는 기능이다.
-  - 초기 MVP에서는 제외하고, 이후 개인화 추천이나 소셜 기능을 추가할 때 다시 검토한다.
-- [ ] 유명 유저 추천 가중치
-  - 초기 MVP에서는 제외한다.
-  - 데이터가 충분히 쌓인 뒤 꿀템 랭킹 개선 기능으로 확장한다.
-- [ ] 팔로우한 유저 추천 가중치
-  - 초기 MVP에서는 제외한다.
-  - 팔로우 기능이 도입된 뒤 개인화 추천에 반영한다.
-- [ ] 개인화 추천 알고리즘
-  - 초기 MVP에서는 제외한다.
-  - 사용자 행동 데이터가 충분히 쌓인 뒤 별도 기능으로 확장한다.
-- [ ] 브랜드/쇼핑몰명 유사도 기반 자동 중복 판별
-  - 초기 MVP에서는 제외한다.
-  - 상품명 후보 검색과 사용자 확인 흐름을 먼저 사용한다.
-
----
-
-## IA 및 화면 설계서
-
-### Information Architecture (IA)
+## 시스템 구조
 
 ```mermaid
-graph LR
-    Home["🏠 HomePage"]
-
-    Home --> Ranking["🏆 Ranking_Page"]
-    Home --> Item["📦 Item_Detail_Page"]
-    Home --> Add["➕ Add_Item_Page"]
-    Home --> Users["👥 Users_Page"]
-    Home --> My["🙍 My_Page"]
-
-    Home --> Login["🔑 Login_Page"]
-    Home --> Signup["📝 Signup_Page"]
-
-    Ranking --> Category["Category_Ranking_Page"]
-
-    Item --> Review["⭐ Review_Detail_Page"]
-    Item --> Write["✍️ Write_Review_Page"]
-
-    Users --> Profile["👤 User_Profile_Page"]
-    Profile --> Followers["Followers_Page"]
-    Profile --> Following["Following_Page"]
-
-    My --> Change["⚙️ Change_Username_Page"]
+flowchart LR
+    A["React + Vite"] -->|"/api, /media"| B["Django REST API"]
+    B --> C["SQLite / media"]
+    B --> D["Vision pipeline"]
+    D --> E["Gemini or Codex"]
+    B --> F["Django Admin"]
 ```
-Admin 화면은 React로 별도 구현하지 않고 Django admin을 사용한다.
 
-### 화면 설계서
-<p align="center">
-  <img width="45%" src="https://github.com/user-attachments/assets/0a5f1e5b-3c5d-4fac-b5b4-5c8c64f1bfec">
-  <img width="45%" src="https://github.com/user-attachments/assets/d63b3525-7aaa-4827-a671-400a5744a4de">
-</p>
+개발 환경에서는 Vite가 `/api`와 `/media`를 Django로 proxy합니다.
+배포 환경에서는 Nginx가 정적 frontend를 제공하고 API 요청을 Gunicorn에
+전달하도록 구성했습니다.
 
-<p align="center">
-  <img width="45%" src="https://github.com/user-attachments/assets/cb5caac2-0a0f-4ae8-8be0-2138e430f4e4">
-  <img width="45%" src="https://github.com/user-attachments/assets/bbbf4303-7f05-44ec-8374-278cd63a8282">
-</p>
+## 기술 스택
 
----
+| 영역 | 기술 |
+|---|---|
+| Frontend | React 19, Vite, React Router, Axios |
+| Backend | Python, Django 4.2, Django REST Framework |
+| Auth | Simple JWT |
+| Vision | Gemini API 또는 Codex CLI, Pillow |
+| Data | SQLite, Django ORM, media file storage |
+| Deploy | Nginx, Gunicorn |
+| Quality | Django TestCase, Oxlint, Vite production build |
 
-## DB 스키마
+## 로컬 실행
 
-### E-R Diagram
-
-![assets/ERD.png](assets/ERD.png)
-
----
-
-## API 문서
-
-기본 prefix는 `/api/`이며, 인증이 필요한 API는 JWT `Authorization: Bearer <access_token>` 헤더를 사용한다.
-
-### System
-
-| Method | Endpoint | 설명 | 요청 | 응답 |
-|---|---|---|---|---|
-| GET | `/api/` | API 루트 | 없음 | 서비스 상태, 주요 엔드포인트 |
-| GET | `/api/health/` | 헬스 체크 | 없음 | `{status, message}` |
-
-### Accounts
-
-| Method | Endpoint | 설명 | 요청 | 응답 |
-|---|---|---|---|---|
-| GET | `/api/accounts/` | 유저 목록 조회 | 없음 | `{users: [{id, username}]}` |
-| GET | `/api/accounts/me/` | 내 정보 조회 | JWT 필요 | `{id, username}` |
-| POST | `/api/accounts/signup/` | 회원가입 | `{username, password}` | `{message, user}` |
-| POST | `/api/accounts/login/` | 로그인 | `{username, password}` | `{message, user, access, refresh}` |
-| POST | `/api/accounts/logout/` | 로그아웃 | `{refresh}` + JWT | `{message}` |
-
-### Items
-
-| Method | Endpoint | 설명 | 요청 | 응답 |
-|---|---|---|---|---|
-| GET | `/api/items/` | 아이템 목록/검색 | `name`, `shop_or_brand_name`, `original_url`, `created_by` 쿼리 | 아이템 배열 |
-| POST | `/api/items/` | 아이템 생성 | `name`, `description`, `category`, `price`, `shop_or_brand_name`, `original_url`, `image` + JWT | 생성된 아이템 |
-| GET | `/api/items/{id}/` | 아이템 상세 | 없음 | 아이템 상세 |
-| PATCH/PUT | `/api/items/{id}/` | 아이템 수정 | 수정 필드 | 수정된 아이템 |
-| DELETE | `/api/items/{id}/` | 아이템 삭제 | 없음 | `204 No Content` |
-| POST | `/api/items/duplicate-candidates/` | 중복 후보 탐색 | `{name, shop_or_brand_name?, original_url?, price?}` | `{has_duplicates, message, candidates}` |
-| POST | `/api/items/extract-from-screenshot/` | 스크린샷 기반 상품 정보 추출 | `multipart/form-data`의 `screenshot` | `{name, category, shop_or_brand_name, price, price_text, cropped_image_url, confidence, warnings}` |
-| GET | `/api/items/ranking/` | 별 수 기반 랭킹 | `limit`, `category`, `name` 쿼리 | `{count, limit, category, results}` |
-| GET | `/api/items/categories/` | 카테고리 옵션 조회 | 없음 | `{results: [{value, label}]}` |
-| GET | `/api/items/{id}/ranking-detail/` | 랭킹용 아이템 상세 | 없음 | 랭킹 직렬화 결과 |
-| POST | `/api/items/{id}/star/` | 아이템 추천 토글 | JWT 필요 | `{detail}` |
-| GET | `/api/items/star-summary/` | 전체 아이템 별 수 요약 | 선택적 JWT | `{results: [{id, starCount, isStarred}]}` |
-| GET | `/api/items/{id}/star-summary/` | 개별 아이템 별 수 요약 | 선택적 JWT | `{id, starCount, isStarred}` |
-| GET | `/api/items/users/{user_id}/stars/` | 특정 유저가 별 준 아이템 목록 | 없음 | `{results: [{itemId, itemName, category}]}` |
-| POST | `/api/items/{id}/change-requests/` | 아이템 수정/삭제 요청 생성 | `{request_type, requested_fields?, reason}` + JWT | 변경 요청 객체 |
-| GET | `/api/items/{id}/change-requests/mine/` | 내 대기중 요청 조회 | JWT 필요 | 변경 요청 객체 또는 `null` |
-| DELETE | `/api/items/change-requests/{id}/` | 내 대기중 요청 취소 | JWT 필요 | `204 No Content` |
-
-### Reviews
-
-| Method | Endpoint | 설명 | 요청 | 응답 |
-|---|---|---|---|---|
-| GET | `/api/reviews/` | 리뷰 목록/검색 | `item_id`, `author_id`, `q`, `user_id` 쿼리 | 리뷰 배열 |
-| POST | `/api/reviews/` | 리뷰 생성 | `{item, user_id?, title, content}` | 생성된 리뷰 |
-| GET | `/api/reviews/{id}/` | 리뷰 상세 | `user_id` 선택 쿼리 | 리뷰 상세 |
-| PATCH/PUT | `/api/reviews/{id}/` | 리뷰 수정 | `{user_id, title?, content?}` | 수정된 리뷰 |
-| DELETE | `/api/reviews/{id}/` | 리뷰 삭제 | `{user_id}` | `204 No Content` |
-| GET | `/api/reviews/{review_id}/comments/` | 댓글 목록 | `user_id` 선택 쿼리 | 댓글 배열 |
-| POST | `/api/reviews/{review_id}/comments/` | 댓글 생성 | `{user_id, content}` | 생성된 댓글 |
-| GET | `/api/reviews/comments/{comment_id}/` | 댓글 상세 | `user_id` 선택 쿼리 | 댓글 상세 |
-| PATCH | `/api/reviews/comments/{comment_id}/` | 댓글 수정 | `{user_id, content}` | 수정된 댓글 |
-| DELETE | `/api/reviews/comments/{comment_id}/` | 댓글 삭제 | `{user_id}` | `204 No Content` |
-| POST | `/api/reviews/{review_id}/reaction/` | 리뷰 좋아요/싫어요 토글 | `{user_id, reaction}` | 갱신된 리뷰 |
-| GET | `/api/reviews/{review_id}/reactions/` | 리뷰 반응 목록 | 없음 | 반응 배열 |
-| POST | `/api/reviews/comments/{comment_id}/reaction/` | 댓글 좋아요/싫어요 토글 | `{user_id, reaction}` | 갱신된 댓글 |
-| GET | `/api/reviews/comments/{comment_id}/reactions/` | 댓글 반응 목록 | 없음 | 반응 배열 |
-
-`reaction` 값은 리뷰/댓글 모두 `like` 또는 `dislike`다. 같은 반응을 다시 보내면 취소되고, 다른 반응을 보내면 교체된다.
-
-### Users / Follow
-
-| Method | Endpoint | 설명 | 요청 | 응답 |
-|---|---|---|---|---|
-| GET | `/api/user/` | 유저 목록 조회 | 선택적 JWT | `{users: [{id, username}]}` |
-| GET | `/api/user/{user_id}/` | 유저 프로필 조회 | 없음 | `{id, username}` |
-| POST | `/api/user/{user_id}/follow/` | 팔로우 | JWT 필요 | `{detail}` |
-| DELETE | `/api/user/{user_id}/follow/` | 언팔로우 | JWT 필요 | `204 No Content` |
-| GET | `/api/user/{user_id}/followers/` | 팔로워 목록 | 없음 | `[{user: {id, username}, created_at}]` |
-| GET | `/api/user/{user_id}/following/` | 팔로잉 목록 | 없음 | `[{user: {id, username}, created_at}]` |
-| PATCH | `/api/user/{user_id}/transname/` | username 변경 | `{username}` + JWT | `{id, username, detail}` |
-
-### Recommend
-
-| Method | Endpoint | 설명 | 요청 | 응답 |
-|---|---|---|---|---|
-| GET | `/api/recommend/` | 팔로워/별 수 기반 추천 집계 | 없음 | `{results, top_user_items, by_category, category_top_items}` |
-
----
-
-## 배포 결과물
-
-### 서비스 URL
-[https://ggultem.chekonghoon.madcamp-kaist.org/](https://chekonghoon.madcamp-kaist.org/)
-
-### Frontend
-상세 실행 방법은 `frontend/README.md`를 참고합니다.
+요구 사항은 Python 3.10+, Node.js 20+, npm입니다.
 
 ### Backend
-상세 실행 방법은 `backend/README.md`를 참고합니다.
 
-### 개발/배포 환경 구조 이원화
-<img width="2816" height="1536" alt="Gemini_Generated_Image_lqqgkhlqqgkhlqqg" src="https://github.com/user-attachments/assets/d4f06b16-d312-4907-8c49-8b198f993d49" />
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
+```
 
-#### 개발 환경 구조
-- 프론트엔드는 Vite 개발 서버에서 실행하고, 브라우저는 우선 Vite에 접속한다.
-- Vite가 `/api`, `/media` 요청만 Django로 프록시하므로, 프론트와 백엔드를 각각 독립적으로 개발하면서도 브라우저 입장에서는 같은 오리진처럼 다룰 수 있다.
-- 이 구조를 쓰면 React HMR, 빠른 번들링, 프론트엔드 에러 확인은 Vite가 담당하고, API 개발과 Django admin, 미디어 처리는 Django가 담당하게 되어 개발 효율이 높다.
+API는 기본적으로 `http://127.0.0.1:8000/api/`에서 실행됩니다. vision
+기능을 사용하려면 [vision/README.md](vision/README.md)에 따라 provider와
+API key를 별도로 설정하세요.
 
-#### 배포 환경 구조
-- 배포 시에는 Vite dev server를 띄우지 않고 `frontend/dist` 빌드 결과물을 Nginx가 직접 서빙한다.
-- API 요청은 Nginx가 `/api` 경로를 gunicorn 뒤의 Django 애플리케이션으로 전달한다.
-- 이렇게 하면 브라우저는 하나의 도메인만 바라보고, 정적 리소스와 API를 같은 진입점에서 사용할 수 있다.
+### Frontend
 
-### 왜 이런 구조를 채택했는가
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-- 개발과 배포의 책임을 분리하기 좋다. 개발에서는 Vite가 빠른 프론트엔드 피드백을 제공하고, 배포에서는 Nginx가 안정적으로 정적 파일을 전달한다.
-- Django가 정적 파일까지 모두 직접 처리하지 않아도 되므로 애플리케이션 서버는 API와 비즈니스 로직에 집중할 수 있다.
-- 프론트엔드와 백엔드가 `/api` 기준으로 느슨하게 연결되어 있어서, 로컬 개발과 운영 배포에서 동일한 URL 규칙을 유지하기 쉽다.
-- 추후 트래픽이 늘어나도 Nginx, gunicorn, Django 레이어를 역할별로 조정하기 쉽다.
+Frontend는 기본적으로 `http://127.0.0.1:5175`에서 실행됩니다.
+세부 환경변수와 production build는
+[frontend/README.md](frontend/README.md) 및
+[backend/README.md](backend/README.md)를 참고하세요.
 
-### Nginx 리버스 프록시를 두는 이유
+## 데이터 모델
 
-- 정적 파일 서빙 성능이 좋다. `dist` 산출물은 Nginx가 직접 응답하는 편이 gunicorn/Django보다 효율적이다.
-- `/api`와 `/media` 요청을 Django로 안전하게 전달하는 단일 진입점 역할을 한다.
-- 브라우저가 프론트엔드와 백엔드를 서로 다른 포트로 직접 호출하지 않아도 되므로 운영 환경에서 CORS, 인증 쿠키/헤더, URL 관리가 단순해진다.
-- TLS 종료, 캐시 정책, 압축, 요청 크기 제한, 접근 로그 같은 운영 설정을 웹 서버 계층에서 일괄 관리할 수 있다.
-- gunicorn 앞단에서 연결을 받아주기 때문에 Django 프로세스를 외부에 직접 노출하지 않아도 된다.
+![꿀템 ERD](assets/ERD.png)
 
+핵심 관계는 `User → Item → Review → Comment`이며, 상품·리뷰·댓글 반응은
+사용자별 unique constraint로 중복 투표를 막습니다. 상품 변경 요청은 원본
+데이터와 분리해 승인 전까지 실제 상품을 수정하지 않습니다.
 
-## 회고 문서
+## 설계에서 해결한 문제
 
-> 개발 과정에서의 어려움, 해결 방법, 역할 분담, 다음에 개선할 점 (KPT 방법론 참고)
+### AI 추출 결과를 바로 신뢰하지 않기
 
-### Keep
-- Github 브랜치를 통해 기능별로 작업을 분산할 수 있었음
-- 기능별로 맡아 구현해 프론트, 백을 다 경험해 볼 수 있었음
+vision 결과에 confidence와 warning을 포함하고, 사용자가 검토한 뒤
+등록하도록 구성했습니다. provider 오류와 quota 오류도 API에서 구분해
+재시도 가능 여부를 전달합니다.
 
-### Problem
-- 프로젝트 초기에 작업하는 부분이 겹쳐 git merge conflict가 자주 발생하는 현상이 있었음
-- 명세서를 구체적으로 작성하고 시작하지 않아서 나중에 db 스키마를 수정해야 하는 기능을 추가하는데 부담이 있었음
+### 중복 상품을 자동 병합하지 않기
 
-### Try
-- 초기 구조를 잡는 과정이 중요하고 업무 분담을 위해 프로젝트 시작 전 기능별 구분을 세분화해야 함
----
+URL exact match와 이름·브랜드·model token 점수로 후보만 제시합니다.
+유사도만으로 기존 데이터를 덮어쓰지 않고 최종 선택을 사용자에게
+남겼습니다.
 
-## 참고 자료
+### 커뮤니티 데이터의 수정 권한 분리
 
-- [SDD(스펙 주도 개발) 이해하기](https://news.hada.io/topic?id=21338)
-- [Software Design Document Best Practices](https://www.atlassian.com/work-management/project-management/design-document)
-- [IA 정보구조도 작성 방법](https://brunch.co.kr/@nyonyo/7)
-- [기획자 화면설계서 작성법](https://brunch.co.kr/@soup/10)
-- [Figma 와이어프레임 가이드](https://www.figma.com/ko-kr/resource-library/what-is-wireframing/)
-- [무료 Figma 와이어프레임 키트](https://www.figma.com/ko-kr/templates/wireframe-kits/)
-- [ERD/DB 설계 총정리](https://inpa.tistory.com/entry/DB-%F0%9F%93%9A-%EB%8D%B0%EC%9D%B4%ED%84%B0-%EB%AA%A8%EB%8D%B8%EB%A7%81-%EA%B0%9C%EB%85%90-ERD-%EB%8B%A4%EC%9D%B4%EC%96%B4%EA%B7%B8%EB%9E%A8)
-- [API 명세서 작성 가이드라인](https://velog.io/@sebinChu/BackEnd-API-%EB%AA%85%EC%84%B8%EC%84%9C-%EC%9E%91%EC%84%B1-%EA%B0%80%EC%9D%B4%EB%93%9C-%EB%9D%BC%EC%9D%B8)
-- [좋은 README 작성하는 방법](https://velog.io/@sabo/good-readme)
-- [단기 프로젝트 회고 KPT 방법론](https://velog.io/@habwa/%EB%8B%A8%EA%B8%B0-%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-%ED%9A%8C%EA%B3%A0-KPT-%EB%B0%A9%EB%B2%95%EB%A1%A0)
+일반 사용자는 상품을 직접 덮어쓰거나 삭제하지 않고 변경 요청을 생성합니다.
+관리자는 Django admin에서 요청을 승인하거나 거절해 audit 가능한 흐름을
+유지합니다.
+
+## 팀과 기여
+
+박채훈([@chek737](https://github.com/chek737)), 이서영
+([@sksy930](https://github.com/sksy930)), 최재윤
+([@Jaeyun-18](https://github.com/Jaeyun-18))이 함께 개발했습니다.
+
+박채훈은 다음 영역에 집중했습니다.
+
+- frontend·backend·AI 분석 흐름의 통합
+- vision 결과를 수정할 수 있는 반자동 등록과 중복 처리
+- ranking·review·사용자 기능을 하나의 상품 data model에 연결
+- Nginx·Gunicorn 기반 배포 환경 구성
+
+## 검증
+
+```bash
+cd backend
+python manage.py test
+
+cd ../frontend
+npm run lint
+npm run build
+```
+
+## 현재 상태
+
+KAIST MadCamp 공통과제로 제작한 MVP입니다. 과거 demo domain은 현재 DNS가
+해제되어 저장소의 screenshot과 로컬 실행을 기준으로 확인할 수 있습니다.
